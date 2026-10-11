@@ -7,39 +7,50 @@ namespace TicTacToe.Api.Tests
     public class GameControllerTests
     {
         [Fact]
-        public void CreateGame_InvalidMode_ReturnsBadRequest()
+        public void PlayMove_InvalidMove_ReturnsBadRequest()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
+            var game = new GameSession
+            {
+                Id = Guid.NewGuid(),
+                Mode = GameMode.TwoPlayer,
+                Board = Enumerable.Repeat<Player?>(null, 9).ToList(),
+                CurrentPlayer = Player.X,
+                Status = GameStatus.Playing
+            };
+            mockStore.Setup(store => store.TryGet(It.IsAny<Guid>(), out game)).Returns(true);
+            mockStore.Setup(store => store.PlayMove(game, 10)).Returns("Position must be between 0 and 8.");
             var controller = new GameController(mockStore.Object);
-            var request = new CreateGameRequest("invalid-mode"); 
+            var request = new MoveRequest(10); // Invalid position
 
             // Act
-            var result = controller.CreateGame(request);
+            var result = controller.PlayMove(game.Id, request);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("mode must be two-player or computer.", ((dynamic)badRequestResult.Value).message);
+            // var response = Assert.IsType(badRequestResult.Value);
+            Assert.Equal("Position must be between 0 and 8.", (badRequestResult.Value));
         }
 
         [Fact]
         public void CreateGame_ValidMode_ReturnsCreatedResult()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
-            var game = new GameSession { Id = Guid.NewGuid() };
+            var mockStore = new Mock<IGameSessionStore>();
+            var game = new GameSession { Id = Guid.NewGuid(), Mode = GameMode.TwoPlayer };
             mockStore.Setup(store => store.Create(It.IsAny<GameMode>())).Returns(game);
             mockStore.Setup(store => store.ToDto(game)).Returns(new GameStateDto(
-     game.Id,
-     game.Mode == GameMode.TwoPlayer ? "two-player" : "computer",
-     game.Board,
-     game.CurrentPlayer.ToString(),
-     game.Status.ToString().ToLowerInvariant(),
-     game.Winner?.ToString(),
-     game.WinningCells,
-     game.Moves.Select(move => new MoveDto(move.Player.ToString(), move.Position)).ToList(),
-     mockStore.Object.ScoreboardSnapshot()
- ));
+                game.Id,
+                "two-player",
+                game.Board,
+                game.CurrentPlayer.ToString(),
+                game.Status.ToString().ToLowerInvariant(),
+                game.Winner?.ToString(),
+                game.WinningCells,
+                game.Moves.Select(move => new MoveDto(move.Player.ToString(), move.Position)).ToList(),
+                new ScoreboardDto(3, 2, 1)
+            ));
             var controller = new GameController(mockStore.Object);
             var request = new CreateGameRequest("two-player");
 
@@ -56,7 +67,7 @@ namespace TicTacToe.Api.Tests
         public void GetGame_NotFound_ReturnsNotFound()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
             GameSession? gameSession = null;
             mockStore.Setup(store => store.TryGet(It.IsAny<Guid>(), out gameSession)).Returns(false);
             var controller = new GameController(mockStore.Object);
@@ -68,15 +79,24 @@ namespace TicTacToe.Api.Tests
             Assert.IsType<NotFoundObjectResult>(result);
         }
 
-    
         [Fact]
         public void UndoMove_ValidGame_ReturnsOkResult()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
             var game = new GameSession();
             mockStore.Setup(store => store.TryGet(It.IsAny<Guid>(), out game)).Returns(true);
-            //mockStore.Setup(store => store.ToDto(game)).Returns(new { });
+            mockStore.Setup(store => store.ToDto(game)).Returns(new GameStateDto(
+                game.Id,
+                "two-player",
+                game.Board,
+                game.CurrentPlayer.ToString(),
+                game.Status.ToString().ToLowerInvariant(),
+                game.Winner?.ToString(),
+                game.WinningCells,
+                game.Moves.Select(move => new MoveDto(move.Player.ToString(), move.Position)).ToList(),
+                new ScoreboardDto(3, 2, 1)
+            ));
             var controller = new GameController(mockStore.Object);
 
             // Act
@@ -88,22 +108,23 @@ namespace TicTacToe.Api.Tests
         }
 
         [Fact]
-        public void ResetGame_ValidGame_ReturnsOkResult()//TODO: Fix
+        public void ResetGame_ValidGame_ReturnsOkResult()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
             var game = new GameSession();
-
-            // Properly set up the out parameter
-            mockStore
-                .Setup(store => store.TryGet(It.IsAny<Guid>(), out game))
-                .Returns(true);
-
-            // Return the correct DTO type instead of an anonymous object
-            //mockStore
-            //       .Setup(store => store.ToDto(It.IsAny<GameSession>()))
-            //       .Returns(new GameSessionDto { Id = Guid.NewGuid() });
-
+            mockStore.Setup(store => store.TryGet(It.IsAny<Guid>(), out game)).Returns(true);
+            mockStore.Setup(store => store.ToDto(game)).Returns(new GameStateDto(
+                game.Id,
+                "two-player",
+                game.Board,
+                game.CurrentPlayer.ToString(),
+                game.Status.ToString().ToLowerInvariant(),
+                game.Winner?.ToString(),
+                game.WinningCells,
+                game.Moves.Select(move => new MoveDto(move.Player.ToString(), move.Position)).ToList(),
+                new ScoreboardDto(3, 2, 1)
+            ));
             var controller = new GameController(mockStore.Object);
 
             // Act
@@ -112,7 +133,6 @@ namespace TicTacToe.Api.Tests
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult.Value);
-           // Assert.IsType<GameSessionDto>(okResult.Value);
         }
     }
 }
