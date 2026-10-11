@@ -6,9 +6,15 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddSingleton<GameSessionStore>();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(opts =>
+    {
+        opts.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+        // Do NOT use StringEnumConverter
+    });
+//builder.Services.ConfigureHttpJsonOptions(options =>
+//    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddSingleton<IGameSessionStore, GameSessionStore>();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyOrigin()
     .AllowAnyHeader()

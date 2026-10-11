@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-public sealed class GameSessionStore
+public sealed class GameSessionStore : IGameSessionStore
 {
     private static readonly int[][] WinningPatterns =
     {
