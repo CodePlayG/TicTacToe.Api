@@ -30,7 +30,8 @@ namespace TicTacToe.Api.Tests
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             // var response = Assert.IsType(badRequestResult.Value);
-            Assert.Equal("Position must be between 0 and 8.", (badRequestResult.Value));
+            var value = badRequestResult.Value as dynamic;
+            Assert.Equal("Position must be between 0 and 8.", value?.message);
         }
 
         [Fact]

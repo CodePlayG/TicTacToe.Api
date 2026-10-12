@@ -10,7 +10,7 @@ namespace TicTacToe.Api.Tests
         public void GetScoreboard_ReturnsOkResult()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
             mockStore.Setup(store => store.ScoreboardSnapshot()).Returns(new ScoreboardDto(0, 0, 0));
             var controller = new ScoreboardController(mockStore.Object);
 
@@ -26,7 +26,7 @@ namespace TicTacToe.Api.Tests
         public void ResetScoreboard_ReturnsOkResult()
         {
             // Arrange
-            var mockStore = new Mock<GameSessionStore>();
+            var mockStore = new Mock<IGameSessionStore>();
             mockStore.Setup(store => store.ResetScoreboard()).Returns(new ScoreboardDto(0, 0, 0));
             var controller = new ScoreboardController(mockStore.Object);
 

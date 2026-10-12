@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/scoreboard")]
 public class ScoreboardController : ControllerBase
 {
-    private readonly GameSessionStore _store;
+    private readonly IGameSessionStore _store;
 
-    public ScoreboardController(GameSessionStore store)
+    public ScoreboardController(IGameSessionStore store)
     {
         _store = store;
     }
